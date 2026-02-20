@@ -87,22 +87,20 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
+
             mkdir -p ${{ env.DEPLOY_DIR }}
             cd ${{ env.DEPLOY_DIR }}
 
-            cat > .env <<'ENVEOF'
-            NODE_ENV=${{ env.NODE_ENV }}
-            BACKUP_PATH=/app/backups
-            CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            MAIL_HOST=${{ secrets.MAIL_HOST }}
-            MAIL_PORT=${{ secrets.MAIL_PORT }}
-            MAIL_USER=${{ secrets.MAIL_USER }}
-            MAIL_PASS=${{ secrets.MAIL_PASS }}
-            MAIL_TO=${{ secrets.MAIL_TO }}
-            ENVEOF
-
-            sed -i 's/^[[:space:]]*//' .env
+            echo "NODE_ENV=${{ env.NODE_ENV }}" > .env
+            echo "BACKUP_PATH=/app/backups" >> .env
+            echo "CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
+            echo "MAIL_PORT=${{ secrets.MAIL_PORT }}" >> .env
+            echo "MAIL_USER=${{ secrets.MAIL_USER }}" >> .env
+            echo "MAIL_PASS=${{ secrets.MAIL_PASS }}" >> .env
+            echo "MAIL_TO=${{ secrets.MAIL_TO }}" >> .env
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
