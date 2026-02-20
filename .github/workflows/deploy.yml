@@ -101,15 +101,17 @@ jobs:
             echo "MAIL_USER=${{ secrets.MAIL_USER }}" >> .env
             echo "MAIL_PASS=${{ secrets.MAIL_PASS }}" >> .env
             echo "MAIL_TO=${{ secrets.MAIL_TO }}" >> .env
+            echo "DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }}" >> .env
+            echo "IMAGE_TAG=${{ env.IMAGE_TAG }}" >> .env
+            echo "ENV_SUFFIX=${{ env.ENV_SUFFIX }}" >> .env
+            echo "BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }}" >> .env
+
+            cat .env
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker pull ${{ secrets.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
 
-            export DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }}
-            export IMAGE_TAG=${{ env.IMAGE_TAG }}
-            export ENV_SUFFIX=${{ env.ENV_SUFFIX }}
-            export BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }}
             docker compose -p klaps-backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate --pull always
 
             docker image prune -f
