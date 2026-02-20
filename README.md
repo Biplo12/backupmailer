@@ -76,16 +76,16 @@ Backup files and logs are mounted to `./backups/` and `./logs/` on the host.
 
 ## Environment Variables
 
-| Variable | Description | Example |
-| --- | --- | --- |
-| `BACKUP_PATH` | Directory for backup files | `./backups` |
-| `CRON_SCHEDULE` | Cron expression for backup schedule | `0 2 * * *` |
-| `DATABASE_URL` | MySQL connection string | `mysql://root:pass@db:3306/mydb` |
-| `MAIL_HOST` | SMTP server hostname | `smtp.example.com` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USER` | SMTP username / sender email | `you@example.com` |
-| `MAIL_PASS` | SMTP password | `yourpassword` |
-| `MAIL_TO` | Notification recipient email | `admin@example.com` |
+| Variable        | Description                         | Example                          |
+| --------------- | ----------------------------------- | -------------------------------- |
+| `BACKUP_PATH`   | Directory for backup files          | `./backups`                      |
+| `CRON_SCHEDULE` | Cron expression for backup schedule | `0 2 * * *`                      |
+| `DATABASE_URL`  | MySQL connection string             | `mysql://root:pass@db:3306/mydb` |
+| `MAIL_HOST`     | SMTP server hostname                | `smtp.example.com`               |
+| `MAIL_PORT`     | SMTP port                           | `587`                            |
+| `MAIL_USER`     | SMTP username / sender email        | `you@example.com`                |
+| `MAIL_PASS`     | SMTP password                       | `yourpassword`                   |
+| `MAIL_TO`       | Notification recipient email        | `admin@example.com`              |
 
 ## How It Works
 
