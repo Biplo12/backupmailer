@@ -90,7 +90,7 @@ jobs:
             mkdir -p ${{ env.DEPLOY_DIR }}
             cd ${{ env.DEPLOY_DIR }}
 
-            cat > .env << 'ENVEOF'
+            cat > .env <<'ENVEOF'
             NODE_ENV=${{ env.NODE_ENV }}
             BACKUP_PATH=/app/backups
             CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}
@@ -102,10 +102,16 @@ jobs:
             MAIL_TO=${{ secrets.MAIL_TO }}
             ENVEOF
 
+            sed -i 's/^[[:space:]]*//' .env
+
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker pull ${{ secrets.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
 
-            DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }} IMAGE_TAG=${{ env.IMAGE_TAG }} ENV_SUFFIX=${{ env.ENV_SUFFIX }} BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }} docker compose -p klaps-backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate
+            export DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }}
+            export IMAGE_TAG=${{ env.IMAGE_TAG }}
+            export ENV_SUFFIX=${{ env.ENV_SUFFIX }}
+            export BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }}
+            docker compose -p klaps-backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate --pull always
 
             docker image prune -f
