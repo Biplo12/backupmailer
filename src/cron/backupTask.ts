@@ -31,7 +31,7 @@ const ensureDirectory = (dirPath: string): void => {
 };
 
 export const runBackup = async (config: EnvConfig): Promise<void> => {
-  const backupDir = "/app/backups";
+  const backupDir = config.BACKUP_PATH;
   ensureDirectory(backupDir);
 
   const filename = `backup_${buildTimestamp()}.sql`;
