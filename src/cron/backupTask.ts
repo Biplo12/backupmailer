@@ -45,6 +45,7 @@ export const runBackup = async (config: EnvConfig): Promise<void> => {
     const proc = Bun.spawn(
       [
         "mysqldump",
+        "--ssl-mode=DISABLED",
         "-h",
         host,
         "-P",
