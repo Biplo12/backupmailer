@@ -93,7 +93,7 @@ jobs:
             cd ${{ env.DEPLOY_DIR }}
 
             echo "NODE_ENV=${{ env.NODE_ENV }}" > .env
-            echo "BACKUP_PATH=/app/backups" >> .env
+            echo "BACKUP_PATH=${{ secrets.BACKUP_PATH }}" >> .env
             echo "CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}" >> .env
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
             echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
@@ -104,7 +104,6 @@ jobs:
             echo "DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }}" >> .env
             echo "IMAGE_TAG=${{ env.IMAGE_TAG }}" >> .env
             echo "ENV_SUFFIX=${{ env.ENV_SUFFIX }}" >> .env
-            echo "BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }}" >> .env
 
             cat .env
 
