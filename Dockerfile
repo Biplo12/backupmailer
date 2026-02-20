@@ -13,6 +13,6 @@ RUN bun install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src/ ./src/
 
-RUN mkdir -p /app/backups /app/logs
+RUN mkdir -p /app/logs
 
 CMD ["bun", "run", "src/index.ts"]
