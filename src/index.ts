@@ -18,12 +18,22 @@ const main = async () => {
     process.exit(1);
   }
 
-  cron.schedule(config.CRON_SCHEDULE, async () => {
+  const task = cron.schedule(config.CRON_SCHEDULE, async () => {
     backupLogger.info("Cron triggered -- starting backup job");
     await runBackup(config);
+
+    const nextRun = task.getNextRun();
+    if (nextRun) {
+      backupLogger.info(`Next scheduled run: ${nextRun.toISOString()}`);
+    }
   });
 
-  backupLogger.info("Cron job registered. Waiting for next scheduled run...");
+  const nextRun = task.getNextRun();
+  backupLogger.info(
+    `Cron job registered. Next run: ${
+      nextRun ? nextRun.toISOString() : "unknown"
+    }`
+  );
 };
 
 main();

@@ -90,7 +90,7 @@ jobs:
             mkdir -p ${{ env.DEPLOY_DIR }}
             cd ${{ env.DEPLOY_DIR }}
 
-            cat > .env << ENVEOF
+            cat > .env << 'ENVEOF'
             NODE_ENV=${{ env.NODE_ENV }}
             BACKUP_PATH=/app/backups
             CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}
@@ -106,6 +106,6 @@ jobs:
 
             docker pull ${{ secrets.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
 
-            DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }} IMAGE_TAG=${{ env.IMAGE_TAG }} ENV_SUFFIX=${{ env.ENV_SUFFIX }} BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }} docker compose -p backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate
+            DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }} IMAGE_TAG=${{ env.IMAGE_TAG }} ENV_SUFFIX=${{ env.ENV_SUFFIX }} BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }} docker compose -p klaps-backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate
 
             docker image prune -f
