@@ -3,10 +3,20 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "bun run ./src/index.ts",
+    "backup:now": "bun run ./src/backup-now.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^7.0.11"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.1"
   }
 }
