@@ -31,7 +31,7 @@ const ensureDirectory = (dirPath: string): void => {
 };
 
 export const runBackup = async (config: EnvConfig): Promise<void> => {
-  const backupDir = config.BACKUP_PATH;
+  const backupDir = "/app/backups";
   ensureDirectory(backupDir);
 
   const filename = `backup_${buildTimestamp()}.sql`;
@@ -39,7 +39,9 @@ export const runBackup = async (config: EnvConfig): Promise<void> => {
 
   const { host, port, user, password, database } = config.db;
 
-  backupLogger.info(`Starting backup of database "${database}" on ${host}:${port}...`);
+  backupLogger.info(
+    `Starting backup of database "${database}" on ${host}:${port}...`
+  );
 
   try {
     const proc = Bun.spawn(
@@ -63,7 +65,8 @@ export const runBackup = async (config: EnvConfig): Promise<void> => {
     const exitCode = await proc.exited;
 
     if (exitCode !== 0) {
-      const errorMsg = stderr.trim() || `mysqldump exited with code ${exitCode}`;
+      const errorMsg =
+        stderr.trim() || `mysqldump exited with code ${exitCode}`;
       backupLogger.error(`Backup failed: ${errorMsg}`);
       await sendBackupNotification(config, {
         success: false,
