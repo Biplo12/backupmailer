@@ -1,34 +1,10 @@
-version: "3.9"
-
 services:
   app:
-    build: .
-    container_name: backupmailer_app
+    image: ${DOCKER_IMAGE:-backupmailer}:${IMAGE_TAG:-latest}
+    container_name: backupmailer-${ENV_SUFFIX:-dev}
     restart: always
     env_file:
       - .env
     volumes:
-      - ./backups:/app/backups
+      - ${BACKUP_HOST_DIR:-./backups}:/app/backups
       - ./logs:/app/logs
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ["bun", "run", "src/index.ts"]
-
-  db:
-    image: mysql:8
-    container_name: backupmailer_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: example
-      MYSQL_DATABASE: mydatabase
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  db_data:

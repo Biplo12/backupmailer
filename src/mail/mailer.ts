@@ -19,11 +19,15 @@ const createTransporter = (config: EnvConfig) =>
     },
   });
 
-const buildSubject = (result: BackupResult): string => {
+const buildEnvTag = (config: EnvConfig): string =>
+  config.NODE_ENV === "production" ? "[PROD]" : "[DEV]";
+
+const buildSubject = (config: EnvConfig, result: BackupResult): string => {
+  const tag = buildEnvTag(config);
   if (result.success) {
-    return `[BackupMailer] Backup successful: ${result.filename}`;
+    return `${tag} [BackupMailer] Backup successful: ${result.filename}`;
   }
-  return `[BackupMailer] Backup FAILED`;
+  return `${tag} [BackupMailer] Backup FAILED`;
 };
 
 const buildBody = (result: BackupResult): string => {
@@ -61,7 +65,7 @@ export const sendBackupNotification = async (
   const mailOptions = {
     from: config.MAIL_USER,
     to: config.MAIL_TO,
-    subject: buildSubject(result),
+    subject: buildSubject(config, result),
     text: buildBody(result),
   };
 

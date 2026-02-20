@@ -1,0 +1,111 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      image_tag: ${{ steps.set-env.outputs.image_tag }}
+      env_suffix: ${{ steps.set-env.outputs.env_suffix }}
+      node_env: ${{ steps.set-env.outputs.node_env }}
+    steps:
+      - name: Determine environment
+        id: set-env
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "image_tag=latest" >> $GITHUB_OUTPUT
+            echo "env_suffix=prod" >> $GITHUB_OUTPUT
+            echo "node_env=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "image_tag=dev" >> $GITHUB_OUTPUT
+            echo "env_suffix=dev" >> $GITHUB_OUTPUT
+            echo "node_env=development" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: setup
+    environment: ${{ needs.setup.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_IMAGE }}:${{ needs.setup.outputs.image_tag }}
+            ${{ secrets.DOCKER_IMAGE }}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [setup, build-and-push]
+    environment: ${{ needs.setup.outputs.environment }}
+    env:
+      DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}/${{ needs.setup.outputs.env_suffix }}
+      IMAGE_TAG: ${{ needs.setup.outputs.image_tag }}
+      ENV_SUFFIX: ${{ needs.setup.outputs.env_suffix }}
+      NODE_ENV: ${{ needs.setup.outputs.node_env }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: docker-compose.yml
+          target: ${{ env.DEPLOY_DIR }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p ${{ env.DEPLOY_DIR }}
+            cd ${{ env.DEPLOY_DIR }}
+
+            cat > .env << ENVEOF
+            NODE_ENV=${{ env.NODE_ENV }}
+            BACKUP_PATH=/app/backups
+            CRON_SCHEDULE=${{ secrets.CRON_SCHEDULE }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASS=${{ secrets.MAIL_PASS }}
+            MAIL_TO=${{ secrets.MAIL_TO }}
+            ENVEOF
+
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            docker pull ${{ secrets.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
+
+            DOCKER_IMAGE=${{ secrets.DOCKER_IMAGE }} IMAGE_TAG=${{ env.IMAGE_TAG }} ENV_SUFFIX=${{ env.ENV_SUFFIX }} BACKUP_HOST_DIR=${{ secrets.BACKUP_HOST_DIR }} docker compose -p backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate
+
+            docker image prune -f
