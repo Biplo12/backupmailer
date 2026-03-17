@@ -1,4 +1,7 @@
+export type DbType = "mysql" | "postgres";
+
 export type DatabaseConnection = {
+  type: DbType;
   host: string;
   port: number;
   user: string;
@@ -39,18 +42,39 @@ const getEnvVar = (key: string): string => {
   return value;
 };
 
+const PROTOCOL_MAP: Record<string, DbType> = {
+  "mysql:": "mysql",
+  "mariadb:": "mysql",
+  "postgres:": "postgres",
+  "postgresql:": "postgres",
+};
+
+const DEFAULT_PORTS: Record<DbType, number> = {
+  mysql: 3306,
+  postgres: 5432,
+};
+
 const parseDatabaseUrl = (raw: string): DatabaseConnection => {
   try {
     const url = new URL(raw);
     const database = url.pathname.replace(/^\//, "");
+
+    const dbType = PROTOCOL_MAP[url.protocol];
+    if (!dbType) {
+      const supported = Object.keys(PROTOCOL_MAP).join(", ");
+      throw new Error(
+        `Unsupported database protocol "${url.protocol}". Supported: ${supported}`
+      );
+    }
 
     if (!url.hostname || !url.username || !database) {
       throw new Error("URL must contain host, username, and database name");
     }
 
     return {
+      type: dbType,
       host: url.hostname,
-      port: url.port ? parseInt(url.port, 10) : 3306,
+      port: url.port ? parseInt(url.port, 10) : DEFAULT_PORTS[dbType],
       user: decodeURIComponent(url.username),
       password: decodeURIComponent(url.password),
       database,

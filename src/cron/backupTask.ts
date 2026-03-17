@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { EnvConfig } from "../utils/env.ts";
+import type { EnvConfig, DatabaseConnection } from "../utils/env.ts";
 import { backupLogger } from "../utils/logger.ts";
 import { sendBackupNotification } from "../mail/mailer.ts";
 
@@ -30,6 +30,44 @@ const ensureDirectory = (dirPath: string): void => {
   }
 };
 
+type SpawnConfig = {
+  command: string[];
+  env?: Record<string, string>;
+};
+
+const buildMysqlDump = (db: DatabaseConnection): SpawnConfig => ({
+  command: [
+    "mysqldump",
+    "--skip-ssl",
+    "-h",
+    db.host,
+    "-P",
+    String(db.port),
+    "-u",
+    db.user,
+    `-p${db.password}`,
+    db.database,
+  ],
+});
+
+const buildPgDump = (db: DatabaseConnection): SpawnConfig => ({
+  command: [
+    "pg_dump",
+    "-h",
+    db.host,
+    "-p",
+    String(db.port),
+    "-U",
+    db.user,
+    "-d",
+    db.database,
+  ],
+  env: { PGPASSWORD: db.password },
+});
+
+const buildDumpCommand = (db: DatabaseConnection): SpawnConfig =>
+  db.type === "postgres" ? buildPgDump(db) : buildMysqlDump(db);
+
 export const runBackup = async (config: EnvConfig): Promise<void> => {
   const backupDir = config.BACKUP_PATH;
   ensureDirectory(backupDir);
@@ -37,28 +75,21 @@ export const runBackup = async (config: EnvConfig): Promise<void> => {
   const filename = `backup_${buildTimestamp()}.sql`;
   const outputPath = join(backupDir, filename);
 
-  const { host, port, user, password, database } = config.db;
+  const { host, port, database, type } = config.db;
+  const toolName = type === "postgres" ? "pg_dump" : "mysqldump";
 
   backupLogger.info(
-    `Starting backup of database "${database}" on ${host}:${port}...`
+    `Starting ${toolName} backup of "${database}" on ${host}:${port}...`
   );
 
   try {
-    const proc = Bun.spawn(
-      [
-        "mysqldump",
-        "--skip-ssl",
-        "-h",
-        host,
-        "-P",
-        String(port),
-        "-u",
-        user,
-        `-p${password}`,
-        database,
-      ],
-      { stdout: "pipe", stderr: "pipe" }
-    );
+    const { command, env } = buildDumpCommand(config.db);
+
+    const proc = Bun.spawn(command, {
+      stdout: "pipe",
+      stderr: "pipe",
+      env: { ...process.env, ...env },
+    });
 
     const stdout = await new Response(proc.stdout).text();
     const stderr = await new Response(proc.stderr).text();
@@ -66,7 +97,7 @@ export const runBackup = async (config: EnvConfig): Promise<void> => {
 
     if (exitCode !== 0) {
       const errorMsg =
-        stderr.trim() || `mysqldump exited with code ${exitCode}`;
+        stderr.trim() || `${toolName} exited with code ${exitCode}`;
       backupLogger.error(`Backup failed: ${errorMsg}`);
       await sendBackupNotification(config, {
         success: false,
