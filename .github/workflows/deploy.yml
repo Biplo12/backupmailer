@@ -107,10 +107,13 @@ jobs:
 
             cat .env
 
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker pull ${{ secrets.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
 
             docker compose -p klaps-backupmailer-${{ env.ENV_SUFFIX }} up -d --force-recreate --pull always
+
+            # GITHUB_TOKEN expires with the run, so do not keep it on the server
+            docker logout ghcr.io
 
             docker image prune -f
