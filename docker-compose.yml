@@ -8,3 +8,13 @@ services:
     volumes:
       - ${BACKUP_PATH}:${BACKUP_PATH}
       - ./logs:/app/logs
+    networks:
+      - default
+      - db
+
+networks:
+  # The database publishes no public port, so the container joins its
+  # internal Docker network and reaches it by container hostname.
+  db:
+    external: true
+    name: ${DB_NETWORK}
